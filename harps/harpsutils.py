@@ -15,7 +15,7 @@ def getObName(h):
     obname = h[0].header['HIERARCH ESO OBS TARG NAME'].upper().replace(' ','')
     if 'ARCFILE' in h[0].header.keys():
     	if h[0].header['ARCFILE'] == 'HARPS.2011-03-29T01:43:58.502.fits':
-		obname = 'HD77338'
+		    obname = 'HD77338'
     return obname
 
 def FileClassify(diri, log, mode='HARPS'):
