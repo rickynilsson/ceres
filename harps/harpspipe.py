@@ -27,7 +27,7 @@ import argparse
 import ephem
 import jplephem
 from math import radians as rad
-import pyfits
+import astropy.io.fits as pyfits
 import pickle
 import os
 import scipy
@@ -40,7 +40,7 @@ lowess = sm.nonparametric.lowess
 
 # Recive input parameters
 parser = argparse.ArgumentParser()
-parser.add_argument('directorio')
+#parser.add_argument('directorio') # for debugging
 parser.add_argument('-avoid_plot', action="store_true", default=False)
 parser.add_argument('-dirout',default='default')
 parser.add_argument('-do_class', action="store_true", default=False)
@@ -51,7 +51,8 @@ parser.add_argument('-reffile',default='default')
 parser.add_argument('-mode', default='HARPS')
 
 args = parser.parse_args()
-dirin            = args.directorio
+#dirin            = args.directorio
+dirin = '/Volumes/DAT3/astrodata/parvi/harps_data_for_test/archive3/' # for debugging
 avoid_plot       = args.avoid_plot
 dirout           = args.dirout
 DoClass          = args.do_class

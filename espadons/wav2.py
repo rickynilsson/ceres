@@ -1,4 +1,4 @@
-import pyfits
+import astropy.io.fits as pyfits
 from pylab import *
 import scipy
 from scipy import interpolate

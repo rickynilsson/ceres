@@ -1,4 +1,4 @@
-import pyfits
+import astropy.io.fits as pyfits
 import numpy as np
 import scipy
 from scipy import optimize

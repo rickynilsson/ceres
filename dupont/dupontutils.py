@@ -5,7 +5,7 @@ import GLOBALutils
 
 import numpy as np
 import scipy
-import pyfits
+import astropy.io.fits as pyfits
 import os
 import glob
 import scipy.signal

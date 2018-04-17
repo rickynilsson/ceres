@@ -21,7 +21,7 @@ import fiesutils
 import GLOBALutils
 
 # other useful modules
-import pyfits
+import astropy.io.fits as pyfits
 import pickle
 import os
 import numpy as np

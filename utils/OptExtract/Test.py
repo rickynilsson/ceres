@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import pyfits
+import astropy.io.fits as pyfits
 from pylab import *
 import Marsh
 import numpy

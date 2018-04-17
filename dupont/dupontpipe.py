@@ -32,7 +32,7 @@ import glob
 import jplephem
 import os
 import pickle
-import pyfits
+import astropy.io.fits as pyfits
 import scipy
 import scipy.interpolate
 from scipy import optimize

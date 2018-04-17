@@ -1,5 +1,5 @@
 from pylab import *
-import pyfits
+import astropy.io.fits as pyfits
 from PyAstronomy import pyasl
 import scipy
 from scipy import interpolate

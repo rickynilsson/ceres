@@ -26,7 +26,7 @@ import ephem
 import jplephem
 #from PyAstronomy import pyasl
 from math import radians as rad
-import pyfits
+import astropy.io.fits as pyfits
 import pickle
 import os
 import scipy

@@ -9,7 +9,7 @@ import sys
 from pylab import *
 sys.path.append("../utils/GLOBALutils")
 import GLOBALutils
-import pyfits
+import astropy.io.fits as pyfits
 
 import statsmodels.api as sm
 lowess = sm.nonparametric.lowess

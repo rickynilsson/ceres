@@ -3,12 +3,13 @@
 # JPL DE403 ephemerides.
 
 #Update this line!
-PY_PREFIX := /anaconda/
+PY_PREFIX := /Users/ricky/anaconda/
 
 #You might also need to update these other three lines
-SWIG = swig
+SWIG = /usr/local/bin/swig
 INUM = $(PY_PREFIX)/lib/python2.7/site-packages/numpy/core/include/numpy/
-PY   = $(PY_PREFIX)/include/python2.7/
+#PY   = $(PY_PREFIX)/include/python2.7/
+PY = $(PY_PREFIX)/pkgs/python-2.7.13-0/include/python2.7/
 
 # Do not change below here
 ISOFA = ./SOFA
