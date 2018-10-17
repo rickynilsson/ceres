@@ -1,4 +1,7 @@
-import astropy.io.fits as pyfits
+import matplotlib
+matplotlib.use('Agg')
+
+from astropy.io import fits as pyfits
 import numpy as np
 from numpy import median,sqrt,array,exp
 import scipy
@@ -50,9 +53,9 @@ class Constants:
 
 def update_header(hdu,k,v,c=''):
 	try:
-		hdu.header.update(k,v)
+        hdu.header.update(k,v)
 	except:
-		hdu.header[k] = v
+        hdu.header[k] = v
 	return hdu
 
 
@@ -64,14 +67,14 @@ def get_dark_times(darks,key='EXPTIME'):
     times = []
     for dark in darks:
         hd = pyfits.getheader(dark)
-	times.append(hd[key])
+        times.append(hd[key])
     times = np.sort(np.unique(np.array(times)))
     return times
 
 def get_tdarks(darks,dtime,key='EXPTIME'):
     tdarks = []
     for dark in darks:
-	hd = pyfits.getheader(dark)
+        hd = pyfits.getheader(dark)
         if hd[key] == dtime:
             tdarks.append(dark)
     return tdarks
@@ -97,7 +100,8 @@ def ToVacuum(l):
     l_prev = l.copy()
     while(cond):
         l_new = n_Edlen(l_prev) * l
-        if (max(np.absolute(l_new - l_prev)) < 1e-10): cond = 0
+        if (max(np.absolute(l_new - l_prev)) < 1e-10):
+            cond = 0
         l_prev = l_new
     return l_prev
 
@@ -127,33 +131,40 @@ def getcoords(obname,mjd,filen='/data/echelle/feros/coords.txt'):
 				DEC = DEC0 + (PMDEC/3600.)*(mjd-mjdJ2000)/365.
 				break
 	except:
-		print '\t\tWarning! Problem with reference coordinates files.'
+		print('\t\tWarning! Problem with reference coordinates files.')
 	return RA,DEC
 
 def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc2=2):
+    '''
+    Input params:
+    sc - image
+    exap - extraction aperture # This might vary for PARVI
+    ncoeff - trace degree 
+    '''
+    exap = int(exap)
     def fitfunc(p,x):
-	ret = p[0] + p[1] * np.exp(-.5*((x-p[2])/p[3])**2)
-	return ret
+        ret = p[0] + p[1] * np.exp(-.5*((x-p[2])/p[3])**2)
+        return ret
     errfunc = lambda p,y,x: np.ravel( (fitfunc(p,x)-y) )
 
     def gauss2(params,x):
-	amp1 = params[0]
-	amp2 = params[1]
-	med1 = params[2]
-	med2 = params[3]
-	sig1 = params[4]
-	sig2 = params[5]
-	g1 = amp1 * np.exp(-0.5*((x-med1)/sig1)**2)
+        amp1 = params[0]
+        amp2 = params[1]
+        med1 = params[2]
+        med2 = params[3]
+        sig1 = params[4]
+        sig2 = params[5]
+        g1 = amp1 * np.exp(-0.5*((x-med1)/sig1)**2)
         g2 = amp2 * np.exp(-0.5*((x-med2)/sig2)**2)
-	return g1 + g2
+        return g1 + g2
 
     def res_gauss2(params,g,x):
-	return g-gauss2(params,x)
+        return g-gauss2(params,x)
     sc_or = sc.copy()
     if endat == -1:
-    	sc = sc[startfrom:,:]
+        sc = sc[startfrom:,:]
     else:
-	sc = sc[startfrom:endat,:]
+        sc = sc[startfrom:endat,:]
     
     medc = int(.5*sc.shape[1])
     d = np.median(sc[:,medc-exap:medc+exap+1],axis=1)
@@ -167,26 +178,26 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
     sigc = .5*exap
     i = 0
     while i < sc.shape[0]:
-	if i-refw < 0:
-	    x = ejx[:i+refw+1]
-	    y = d[:i+refw+1]
-	elif i + refw +1 > sc.shape[0]:
-	    x = ejx[i-refw:]
-	    y = d[i-refw:]
-	else:
-	    x = ejx[i-refw:i+refw+1]
-	    y = d[i-refw:i+refw+1]
+        if i-refw < 0:
+            x = ejx[:i+refw+1]
+            y = d[:i+refw+1]
+        elif i + refw +1 > sc.shape[0]:
+            x = ejx[i-refw:]
+            y = d[i-refw:]
+        else:
+            x = ejx[i-refw:i+refw+1]
+            y = d[i-refw:i+refw+1]
 
-	g = np.exp(-0.5*((x-i)/sigc)**2)
-	ccf.append(np.add.reduce(y*g))
-	i+=1
+        g = np.exp(-0.5*((x-i)/sigc)**2)
+        ccf.append(np.add.reduce(y*g))
+        i+=1
 
     i = 1
     maxs = []
     while i < len(ccf)-2:
-	if ccf[i]>ccf[i-1] and ccf[i]>ccf[i+1]:
-	    maxs.append(i)
-	i+=1
+        if ccf[i]>ccf[i-1] and ccf[i]>ccf[i+1]:
+            maxs.append(i)
+        i+=1
     
     maxs = np.array(maxs)
     ccf = np.array(ccf)
@@ -203,24 +214,24 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
     exap2 = exap + int(exap*2./3.)
     tbase = np.array([])
     for i in range(len(pos)):
-	exs,vec = [],[]
-	if i == 0:
-	    if pos[i] - exap2 - sp < 0:
-		exs = np.arange(0, pos[i] - exap2+1,1)
-		vec = d[: pos[i] - exap2+1]
-	    else:
-		exs = np.arange(pos[i] - exap2 - sp, pos[i] - exap2+1,1)
-		vec = d[pos[i] - exap2 - sp: pos[i] - exap2+1]
-	else:
-	    if pos[i-1] + exap2 < pos[i] - exap2+1:
-		#print pos[i-1] + exap2 , pos[i] - exap2+1
-		exs = np.arange(pos[i-1] + exap2 , pos[i] - exap2+1,1)
-		vec = d[pos[i-1] + exap2 : pos[i] - exap2 + 1]
+        exs,vec = [],[]
+        if i == 0:
+            if pos[i] - exap2 - sp < 0:
+                exs = np.arange(0, pos[i] - exap2+1,1)
+                vec = d[: pos[i] - exap2+1]
+            else:
+                exs = np.arange(pos[i] - exap2 - sp, pos[i] - exap2+1,1)
+                vec = d[pos[i] - exap2 - sp: pos[i] - exap2+1]
+        else:
+            if pos[i-1] + exap2 < pos[i] - exap2+1:
+                #print pos[i-1] + exap2 , pos[i] - exap2+1
+                exs = np.arange(pos[i-1] + exap2 , pos[i] - exap2+1,1)
+                vec = d[pos[i-1] + exap2 : pos[i] - exap2 + 1]
 
-	if len(exs)>0:
-	    tbase = np.hstack((tbase,exs))
-	    vx.append(np.median(exs))
-	    vy.append(np.median(vec))
+        if len(exs)>0:
+            tbase = np.hstack((tbase,exs))
+            vx.append(np.median(exs))
+            vy.append(np.median(vec))
 
     tbase = tbase.astype('int')
     vx,vy = np.array(vx),np.array(vy)
@@ -261,66 +272,67 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
     #print gfd
     #print len(pos)
     if maxords >0:
-	    pos = pos[::-1]
-	    pos = pos[:maxords]
-	    pos = pos[::-1]
+        pos = pos[::-1]
+        pos = pos[:maxords]
+        pos = pos[::-1]
 
     I = np.where(pos < exap)[0]
     pos = np.delete(pos,I)
     I = np.where(pos > sc.shape[0]-exap)[0]
     pos = np.delete(pos,I)
-    #print len(pos)
+    print(len(pos))
     #plot(d)
     #plot(np.arange(len(d))[pos], d[pos],'ro')
     #show()
     #plot(d)
     ref = []
     if mode == 1 or mode == 2:
-	if mode == 1:
-		exap2 = exap + .5*exap
-		dev = exap2/3.
-	else:
-		exap2 = exap + .2*exap
-		dev = exap2/4.
-	for i in range(len(pos)):
-	    if pos[i]-exap2 < 0:
-		    x = ejx[:pos[i]+exap2+1]
-		    y = d[:pos[i]+exap2+1]
-	    elif pos[i]+exap2+1 > len(d):
-		    x = ejx[pos[i]-exap2:]
-		    y = d[pos[i]-exap2:]
-	    else:	
-		    x = ejx[int(pos[i]-exap2):int(pos[i]+exap2+1)]
-		    y = d[int(pos[i]-exap2):int(pos[i]+exap2+1)]
-	    tx1 = np.arange(x[0]-dev,x[0],1)
-	    tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
-	    ty1 = np.zeros(len(tx1))
-	    ty2 = np.zeros(len(tx2))
-	    x = np.hstack((tx1,x,tx2))
-	    y = np.hstack((ty1,y,ty2))
-	    y -= y.min()
+        if mode == 1:
+            exap2 = exap + .5*exap
+            dev = exap2/3.
+        else:
+            exap2 = exap + .2*exap
+            dev = exap2/4.
+        exap2 = int(exap2)
+        for i in range(len(pos)):
+            if pos[i]-exap2 < 0:
+                x = ejx[:int(pos[i]+exap2+1)]
+                y = d[:int(pos[i]+exap2+1)]
+            elif pos[i]+exap2+1 > len(d):
+                x = ejx[int(pos[i]-exap2):]
+                y = d[int(pos[i]-exap2):]
+            else:	
+                x = ejx[int(pos[i]-exap2):int(pos[i]+exap2+1)]
+                y = d[int(pos[i]-exap2):int(pos[i]+exap2+1)]
+            tx1 = np.arange(x[0]-dev,x[0],1)
+            tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
+            ty1 = np.zeros(len(tx1))
+            ty2 = np.zeros(len(tx2))
+            x = np.hstack((tx1,x,tx2))
+            y = np.hstack((ty1,y,ty2))
+            y -= y.min()
 
-	    if mode == 1:
-	        if len(x) < 4:
-		    tref.append(ref[j])
-	        else:
-		    p, success =  scipy.optimize.leastsq(errfunc, [y.min(),y.max()-y.min(),x.mean(),dev], args=(y,x))
-	        ref.append(p[2])
-	    else:
-		midi = int(0.5*len(x))
-		if len(x) < 7:
-		    tref.append(ref[j])
-	        else:
-		    guess = [np.max(y[:midi]),np.max(y[midi:]),x[0]+np.argmax(y[:midi]),x[0]+midi+np.argmax(y[midi:]),dev,dev]
-		    p, success =  scipy.optimize.leastsq(res_gauss2, guess, args=(y,x))
-		    #print guess
-		    #print p
-		    #plot(x,y)
-		    #axvline(p[2])
-		    #axvline(p[3])
-		    #axvline(0.5*(p[2]+p[3]))
-		    #show()
-	        ref.append(0.5*(p[2]+p[3]))
+            if mode == 1:
+                if len(x) < 4:
+                    tref.append(ref[j])
+                else:
+                    p, success =  scipy.optimize.leastsq(errfunc, [y.min(),y.max()-y.min(),x.mean(),dev], args=(y,x))
+                ref.append(p[2])
+            else:
+                midi = int(0.5*len(x))
+                if len(x) < 7:
+                    tref.append(ref[j])
+                else:
+                    guess = [np.max(y[:midi]),np.max(y[midi:]),x[0]+np.argmax(y[:midi]),x[0]+midi+np.argmax(y[midi:]),dev,dev]
+                    p, success =  scipy.optimize.leastsq(res_gauss2, guess, args=(y,x))
+                    #print guess
+                    #print p
+                    #plot(x,y)
+                    #axvline(p[2])
+                    #axvline(p[3])
+                    #axvline(0.5*(p[2]+p[3]))
+                    #show()
+                ref.append(0.5*(p[2]+p[3]))
 
     ref = np.array(ref)
     #plot(d)
@@ -331,216 +343,216 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
     i = medc -1
 	
     while i >=0:
-	#print i
-	d = sc[:,i]
-	j = 0
-	pos = np.around(ref).astype('int')
-	tref = []
-	if mode == 1 or mode == 2:
-		if mode == 1:
-		    exap2 = exap + .5*exap
-		    dev = exap2/3.
-		else:
-		    exap2 = exap + .2*exap
-		    dev = exap2/4.
+        #print i
+        d = sc[:,i]
+        j = 0
+        pos = np.around(ref).astype('int')
+        tref = []
+        if mode == 1 or mode == 2:
+            if mode == 1:
+                exap2 = exap + .5*exap
+                dev = exap2/3.
+            else:
+                exap2 = exap + .2*exap
+                dev = exap2/4.
+            exap2 = int(exap2)
+            while j < len(pos):
+                if pos[j]-exap2 < 0:
+                    x = ejx[:int(pos[j]+exap2+1)]
+                    y = d[:int(pos[j]+exap2+1)]
+                elif pos[j]+exap2+1 > len(d):
+                    x = ejx[int(pos[j]-exap2):]
+                    y = d[int(pos[j]-exap2):]
+                else:	
+                    x = ejx[int(pos[j]-exap2):int(pos[j]+exap2+1)]
+                    y = d[int(pos[j]-exap2):int(pos[j]+exap2+1)]
 
-		while j < len(pos):
-		    if pos[j]-exap2 < 0:
-			    x = ejx[:int(pos[j]+exap2+1)]
-			    y = d[:int(pos[j]+exap2+1)]
-		    elif pos[j]+exap2+1 > len(d):
-			    x = ejx[int(pos[j]-exap2):]
-			    y = d[int(pos[j]-exap2):]
-		    else:	
-			    x = ejx[int(pos[j]-exap2):int(pos[j]+exap2+1)]
-			    y = d[int(pos[j]-exap2):int(pos[j]+exap2+1)]
-
-		    if mode==1:
-			    if len(x) < 4:
-				    tref.append(ref[j])
-			    else:
-				    tx1 = np.arange(x[0]-dev,x[0],1)
-				    tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
-				    ty1 = np.zeros(len(tx1)) + y.min()
-				    ty2 = np.zeros(len(tx2)) + y.min()
-				    x = np.hstack((tx1,x,tx2))
-				    y = np.hstack((ty1,y,ty2))
-				    p, success =  scipy.optimize.leastsq(errfunc, [y.min(),y.max()-y.min(),x.mean(),dev], args=(y,x))
-				    #plot(x,y)
-				    #plot(x,fitfunc(p,x))
+                if mode==1:
+                    if len(x) < 4:
+                        tref.append(ref[j])
+                    else:
+                        tx1 = np.arange(x[0]-dev,x[0],1)
+                        tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
+                        ty1 = np.zeros(len(tx1)) + y.min()
+                        ty2 = np.zeros(len(tx2)) + y.min()
+                        x = np.hstack((tx1,x,tx2))
+                        y = np.hstack((ty1,y,ty2))
+                        p, success =  scipy.optimize.leastsq(errfunc, [y.min(),y.max()-y.min(),x.mean(),dev], args=(y,x))
+                        #plot(x,y)
+                        #plot(x,fitfunc(p,x))
 			    	    tref.append(p[2])
-		    else:
-			    if len(x) < 7:
-				    tref.append(ref[j])
-			    else:
-				    tx1 = np.arange(x[0]-dev,x[0],1)
-				    tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
-				    ty1 = np.zeros(len(tx1)) + y.min()
-				    ty2 = np.zeros(len(tx2)) + y.min()
-				    x = np.hstack((tx1,x,tx2))
-				    y = np.hstack((ty1,y,ty2))
-				    y -= y.min()
-				    midi = int(0.5*len(x))
+                else:
+                    if len(x) < 7:
+                        tref.append(ref[j])
+                    else:
+                        tx1 = np.arange(x[0]-dev,x[0],1)
+                        tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
+                        ty1 = np.zeros(len(tx1)) + y.min()
+                        ty2 = np.zeros(len(tx2)) + y.min()
+                        x = np.hstack((tx1,x,tx2))
+                        y = np.hstack((ty1,y,ty2))
+                        y -= y.min()
+                        midi = int(0.5*len(x))
 		    		    guess = [np.max(y[:midi]),np.max(y[midi:]),x[0]+np.argmax(y[:midi]),x[0]+midi+np.argmax(y[midi:]),dev,dev]
 		    		    p, success =  scipy.optimize.leastsq(res_gauss2, guess, args=(y,x))
 			    	    tref.append(0.5*(p[2]+p[3]))
-		    j+=1
-	#show()
-	oref = ref.copy()
-	tref = np.array(tref)
-	dif = tref-ref
-	coef = np.polyfit(ref,dif,nc2)
-	#plot(ref,dif,'ro')
-	#plot(oref,np.polyval(coef,oref))
-	coef2 = np.polyfit(np.arange(len(dif)),dif,1)
-	#if i < 500:
-	#	plot(np.arange(len(dif)),dif,'.')
-	#	plot(np.arange(len(dif)),np.polyval(coef2,np.arange(len(dif))))
-	#	xlabel('echelle order number',fontsize=18)
-	#	ylabel('shift [px]',fontsize=18)
-	#	show()
-	#	print gfds
-	residuals = dif - np.polyval(coef,ref)
-	rms = np.sqrt(np.var(residuals))
-	I = np.where(np.absolute(residuals)>3*rms)[0]
-	cond = True
-	if len(I)==0:
-	    cond = False
-	while cond:
-	    im  = np.argmax(np.absolute(residuals))
-	    dif = np.delete(dif,im)
-	    ref = np.delete(ref,im)
-	    coef = np.polyfit(ref,dif,nc2)
-	    residuals = dif - np.polyval(coef,ref)
-	    rms = np.sqrt(np.var(residuals))
-	    I = np.where(np.absolute(residuals)>3*rms)[0]
-	    if len(I)==0:
-		cond = False
-	#plot(oref,np.polyval(coef,oref))
-	cdif = np.polyval(coef,oref)
-	ref = oref + cdif
-	#plot(ref,np.polyval(coef,ref))
-	#show()
+                j+=1
+    	#show()
+    	oref = ref.copy()
+    	tref = np.array(tref)
+    	dif = tref-ref
+    	coef = np.polyfit(ref,dif,nc2)
+    	#plot(ref,dif,'ro')
+    	#plot(oref,np.polyval(coef,oref))
+    	coef2 = np.polyfit(np.arange(len(dif)),dif,1)
+    	#if i < 500:
+    	#	plot(np.arange(len(dif)),dif,'.')
+    	#	plot(np.arange(len(dif)),np.polyval(coef2,np.arange(len(dif))))
+    	#	xlabel('echelle order number',fontsize=18)
+    	#	ylabel('shift [px]',fontsize=18)
+    	#	show()
+    	#	print gfds
+    	residuals = dif - np.polyval(coef,ref)
+    	rms = np.sqrt(np.var(residuals))
+    	I = np.where(np.absolute(residuals)>3*rms)[0]
+    	cond = True
+        if len(I)==0:
+            cond = False
+        while cond:
+            im  = np.argmax(np.absolute(residuals))
+            dif = np.delete(dif,im)
+            ref = np.delete(ref,im)
+            coef = np.polyfit(ref,dif,nc2)
+            residuals = dif - np.polyval(coef,ref)
+            rms = np.sqrt(np.var(residuals))
+            I = np.where(np.absolute(residuals)>3*rms)[0]
+            if len(I)==0:
+                cond = False
+        #plot(oref,np.polyval(coef,oref))
+        cdif = np.polyval(coef,oref)
+        ref = oref + cdif
+        #plot(ref,np.polyval(coef,ref))
+        #show()
 	
-	mat[:,i] = ref
-	i-=4
+        mat[:,i] = ref
+        i-=4
 
     i = medc+1
     ref = mat[:,medc]
     while i < sc.shape[1]:
-	#print i
-	d = sc[:,i]
-	j = 0
-	pos = np.around(ref).astype('int')
-	tref = []
-	if mode == 1 or mode == 2:
-		if mode == 1:
-		    exap2 = exap + .5*exap
-		    dev = exap2/3.
-		else:
-		    exap2 = exap + .2*exap
-		    dev = exap2/4.
-		while j < len(pos):
-		    if pos[j]-exap2 < 0:
-			    x = ejx[:int(pos[j]+exap2+1)]
-			    y = d[:int(pos[j]+exap2+1)]
-		    elif pos[j]+exap2+1 > len(d):
-			    x = ejx[int(pos[j]-exap2):]
-			    y = d[int(pos[j]-exap2):]
-		    else:	
-			    x = ejx[int(pos[j]-exap2):int(pos[j]+exap2+1)]
-			    y = d[int(pos[j]-exap2):int(pos[j]+exap2+1)]
+        #print i
+        d = sc[:,i]
+        j = 0
+        pos = np.around(ref).astype('int')
+        tref = []
+        if mode == 1 or mode == 2:
+            if mode == 1:
+                exap2 = exap + .5*exap
+                dev = exap2/3.
+            else:
+                exap2 = exap + .2*exap
+                dev = exap2/4.
+            while j < len(pos):
+                if pos[j]-exap2 < 0:
+                    x = ejx[:int(pos[j]+exap2+1)]
+                    y = d[:int(pos[j]+exap2+1)]
+                elif pos[j]+exap2+1 > len(d):
+                    x = ejx[int(pos[j]-exap2):]
+                    y = d[int(pos[j]-exap2):]
+                else:	
+                    x = ejx[int(pos[j]-exap2):int(pos[j]+exap2+1)]
+                    y = d[int(pos[j]-exap2):int(pos[j]+exap2+1)]
 
-		    if mode == 1:
-			    if len(x) < 4:
-				    tref.append(ref[j])
-			    else:
-				    tx1 = np.arange(x[0]-dev,x[0],1)
-		   		    tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
-		   		    ty1 = np.zeros(len(tx1)) + y.min()
-		   		    ty2 = np.zeros(len(tx2)) + y.min()
-		   		    x = np.hstack((tx1,x,tx2))
-		   		    y = np.hstack((ty1,y,ty2))
-				    p, success =  scipy.optimize.leastsq(errfunc, [y.min(),y.max()-y.min(),x.mean(),dev], args=(y,x))
-			    	    tref.append(p[2])
-		    else:
-			    if len(x) < 7:
-				    tref.append(ref[j])
-			    else:
-				    tx1 = np.arange(x[0]-dev,x[0],1)
-		   		    tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
-		   		    ty1 = np.zeros(len(tx1)) + y.min()
-		   		    ty2 = np.zeros(len(tx2)) + y.min()
-		   		    x = np.hstack((tx1,x,tx2))
-		   		    y = np.hstack((ty1,y,ty2))
-				    y -= y.min()
-				    midi = int(0.5*len(x))
+                if mode == 1:
+                    if len(x) < 4:
+                        tref.append(ref[j])
+                    else:
+                        tx1 = np.arange(x[0]-dev,x[0],1)
+                        tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
+                        ty1 = np.zeros(len(tx1)) + y.min()
+                        ty2 = np.zeros(len(tx2)) + y.min()
+                        x = np.hstack((tx1,x,tx2))
+                        y = np.hstack((ty1,y,ty2))
+                        p, success =  scipy.optimize.leastsq(errfunc, [y.min(),y.max()-y.min(),x.mean(),dev], args=(y,x))
+                        tref.append(p[2])
+                else:
+                    if len(x) < 7:
+                        tref.append(ref[j])
+                    else:
+                        tx1 = np.arange(x[0]-dev,x[0],1)
+                        tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
+                        ty1 = np.zeros(len(tx1)) + y.min()
+                        ty2 = np.zeros(len(tx2)) + y.min()
+                        x = np.hstack((tx1,x,tx2))
+                        y = np.hstack((ty1,y,ty2))
+                        y -= y.min()
+                        midi = int(0.5*len(x))
 		    		    guess = [np.max(y[:midi]),np.max(y[midi:]),x[0]+np.argmax(y[:midi]),x[0]+midi+np.argmax(y[midi:]),dev,dev]
 		    		    p, success =  scipy.optimize.leastsq(res_gauss2, guess, args=(y,x))
 			    	    tref.append(0.5*(p[2]+p[3]))
 		    
-		    j+=1
+                j+=1
 
-	oref = ref.copy()
-	tref = np.array(tref)
-	dif = tref-ref
+    	oref = ref.copy()
+    	tref = np.array(tref)
+    	dif = tref-ref
 
-	coef = np.polyfit(ref,dif,nc2)
+    	coef = np.polyfit(ref,dif,nc2)
 
-	residuals = dif - np.polyval(coef,ref)
-	rms = np.sqrt(np.var(residuals))
-	I = np.where(np.absolute(residuals)>3*rms)[0]
-	cond = True
-	if len(I)==0:
-	    cond = False
-	while cond:
-	    im  = np.argmax(np.absolute(residuals))
-	    dif = np.delete(dif,im)
-	    ref = np.delete(ref,im)
-	    coef = np.polyfit(ref,dif,nc2)
-	    residuals = dif - np.polyval(coef,ref)
-	    rms = np.sqrt(np.var(residuals))
-	    I = np.where(np.absolute(residuals)>3*rms)[0]
-	    if len(I)==0:
-		cond = False
-	
-	cdif = np.polyval(coef,oref)
-	ref = oref + cdif
-	#plot(ref,np.polyval(coef,ref))
-	#show()
-	mat[:,i] = ref
-	i+=4
+    	residuals = dif - np.polyval(coef,ref)
+    	rms = np.sqrt(np.var(residuals))
+    	I = np.where(np.absolute(residuals)>3*rms)[0]
+    	cond = True
+        if len(I)==0:
+            cond = False
+        while cond:
+            im  = np.argmax(np.absolute(residuals))
+            dif = np.delete(dif,im)
+            ref = np.delete(ref,im)
+            coef = np.polyfit(ref,dif,nc2)
+            residuals = dif - np.polyval(coef,ref)
+            rms = np.sqrt(np.var(residuals))
+            I = np.where(np.absolute(residuals)>3*rms)[0]
+            if len(I)==0:
+                cond = False
+
+        cdif = np.polyval(coef,oref)
+        ref = oref + cdif
+        #plot(ref,np.polyval(coef,ref))
+        #show()
+        mat[:,i] = ref
+        i+=4
 
     #imshow(sc_or,vmax=5000)
     for i in range(mat.shape[0]):
-	y = mat[i]
-	x = np.arange(len(y))
-	I = np.where(y!=0)[0]
-	x,y = x[I],y[I]+startfrom
-	coef = np.polyfit(x,y,ncoef)
-	#plot(x,y,'bo')
-	residuals = y - np.polyval(coef,x)
-	rms = np.sqrt(np.var(residuals))
-	I = np.where(np.absolute(residuals)>3*rms)[0]
-	cond = True
-	if len(I)==0:
-	    cond = False
-	while cond:
-	    im = np.argmax(np.absolute(residuals))
-	    x = np.delete(x,im)
-	    y = np.delete(y,im)
-	    coef = np.polyfit(x,y,ncoef)
-	    residuals = y - np.polyval(coef,x)
-	    rms = np.sqrt(np.var(residuals))
-	    I = np.where(np.absolute(residuals)>3*rms)[0]
-	    if len(I)==0:
-		cond = False
-	#coef[-1] += startfrom
-	if i == 0:
-	    acoefs = coef
-	else:
-	    acoefs = np.vstack((acoefs,coef))
-	#plot(np.polyval(coef,np.arange(len(mat[i]))),'k')
+        y = mat[i]
+        x = np.arange(len(y))
+        I = np.where(y!=0)[0]
+        x,y = x[I],y[I]+startfrom
+        coef = np.polyfit(x,y,ncoef)
+        #plot(x,y,'bo')
+        residuals = y - np.polyval(coef,x)
+        rms = np.sqrt(np.var(residuals))
+        I = np.where(np.absolute(residuals)>3*rms)[0]
+        cond = True
+        if len(I)==0:
+            cond = False
+        while cond:
+            im = np.argmax(np.absolute(residuals))
+    	    x = np.delete(x,im)
+    	    y = np.delete(y,im)
+    	    coef = np.polyfit(x,y,ncoef)
+    	    residuals = y - np.polyval(coef,x)
+    	    rms = np.sqrt(np.var(residuals))
+    	    I = np.where(np.absolute(residuals)>3*rms)[0]
+            if len(I)==0:
+                cond = False
+        #coef[-1] += startfrom
+        if i == 0:
+            acoefs = coef
+        else:
+            acoefs = np.vstack((acoefs,coef))
+        #plot(np.polyval(coef,np.arange(len(mat[i]))),'k')
 
     #show()
     #print gfds
@@ -576,12 +588,12 @@ def get_zero_order_number(ords,wavs):
 		val = orders*wavs
 		val2 = val/np.add.reduce(val)
 		coef = np.polyfit(ords,val2,1)
-		print coef
+		print(coef)
 		pends.append(coef[0])	
 		plot(ords,val2)
 	pends = np.array(pends)
 	I = np.argmin(pends**2)
-	print o0s[I]
+	print(o0s[I])
 	xlabel('raw order number')
 	ylabel(' $\lambda_c$*(order number + zero order)')
 	subplot(212)
@@ -589,7 +601,7 @@ def get_zero_order_number(ords,wavs):
 	xlabel('zero order')
 	ylabel('slope')
 	show()
-	print gfdsa
+	print(gfdsa)
 
 def Mesh(ycpoly_ob,ycpoly_co):
     """
@@ -601,8 +613,8 @@ def Mesh(ycpoly_ob,ycpoly_co):
     for i in range(len(I)):
         if i == 0:
             npoly = ycpoly[I[i]]
-	else:
-	    npoly = np.vstack((npoly,ycpoly[I[i]]))
+        else:
+            npoly = np.vstack((npoly,ycpoly[I[i]]))
     return npoly
 
 def get_mask(sc,coefs,spa):
@@ -790,6 +802,7 @@ def clean(x,y):
 		if len(J) == 0:
 			cond = False
 	return x,y
+
 def sig_cli(v,ns=2.):
 	vm = np.median(v)
 	res = v - vm
@@ -984,10 +997,10 @@ def MedianCombine_simple(ImgList,ZF=0.):
     else:
         for i in range(n-1):
             h = pyfits.open(ImgList[i+1])[0]
-	    dtemp = h.data-ZF
-	    #plot(dtemp[:,1000])
+            dtemp = h.data-ZF
+            #plot(dtemp[:,1000])
             d = np.dstack((d,h.data-ZF))
-	#show()
+        #show()
         return np.median(d,axis=2)
 
 
@@ -1062,8 +1075,7 @@ def retrace(dat, c_all,span=9):
 	pix = []
 	#plot(dat[:,1000])
 	#show()
-	while i < span+1:
-	
+	while i < span+1:	
 		mat = np.zeros(dat.shape)
 		for j in range(dat.shape[1]):
 			vec = Centers[:,j]
@@ -1090,7 +1102,7 @@ def retrace(dat, c_all,span=9):
 	im = np.where(CCF == CCF.max())[0][0]
 	
 	jj = im
-	mi=0
+	mi = 0
 	while jj > 0:
 		if CCF[jj-1] >= CCF[jj] and  CCF[jj+1] >=CCF[jj]:
 			mi = jj
@@ -1252,7 +1264,7 @@ def JPLiers(path, mjdini, mjdend):
 			c3 = line[58:68]
 			l  = ' '+mj+' '+c1+' '+c2+' '+c3+' '+'\n'
 			output.write(l)
-			if mj == mjdini+999: print "estoy en el dia D"
+			if mj == mjdini+999: print("I am on D-Day")
 		if float(mj) > float(mjdend):
 			break
 	finaldata.close()
@@ -1659,20 +1671,20 @@ def XC_Final_Fit( X, Y, usemin=True, sigma_res = 1.5, horder=20, moonv = 0., moo
     if moon:
 	    p1_gau0 = np.append(p1_gau0, f0)
 	    if (len(L2[0]) > 0):        
-		norms, herms = get_herms(horder)
-		p1_gau, success_gau = scipy.optimize.leastsq(errfunc2,p1_gau0, args=(X[L2],Y[L2],horder,norms,herms,moonv,moons))
-		predicted_gau = fitfunc2(p1_gau,X[L2],horder,norms,herms,moonv,moons)
+            norms, herms = get_herms(horder)
+            p1_gau, success_gau = scipy.optimize.leastsq(errfunc2,p1_gau0, args=(X[L2],Y[L2],horder,norms,herms,moonv,moons))
+            predicted_gau = fitfunc2(p1_gau,X[L2],horder,norms,herms,moonv,moons)
 	    else:
-		p1_gau = np.zeros(n)
-		predicted_gau = np.zeros( len(X[L2]) )
+            p1_gau = np.zeros(n)
+            predicted_gau = np.zeros( len(X[L2]) )
     else:
 	    if (len(L2[0]) > 0):        
-		norms, herms = get_herms(horder)
-		p1_gau, success_gau = scipy.optimize.leastsq(errfunc,p1_gau0, args=(X[L2],Y[L2],horder,norms,herms))
-		predicted_gau = fitfunc(p1_gau,X[L2],horder,norms,herms)
+            norms, herms = get_herms(horder)
+            p1_gau, success_gau = scipy.optimize.leastsq(errfunc,p1_gau0, args=(X[L2],Y[L2],horder,norms,herms))
+            predicted_gau = fitfunc(p1_gau,X[L2],horder,norms,herms)
 	    else:
-		p1_gau = np.zeros(n)
-		predicted_gau = np.zeros( len(X[L2]) )
+            p1_gau = np.zeros(n)
+            predicted_gau = np.zeros( len(X[L2]) )
         
     return p1, predicted, p1_gau, predicted_gau, L2
 
@@ -1697,7 +1709,7 @@ def Average_CCF(xc_full, sn, start_order=0,sn_min=0.15, Simple=False, W=None, bo
     	#I = np.where(np.isnan(xc_full[:,order+1]))
     	#print I
         sum_xc = np.sum( xc_full[:,order+1] )
-	#print order, sum_xc, xc_full[:,order+1]
+        #print order, sum_xc, xc_full[:,order+1]
         if (sum_xc > 0):
             if (Simple):
                 norm = np.median( xc_full[:,order+1] )
@@ -1738,43 +1750,43 @@ def IntGaussian(x,mu,sigma):
     return ret
 
 def CorGaussian(x,mu,sigma):
-     """ Returns Gaussian """
-     norm = 1.0 / (np.sqrt(2 * np.pi) * sigma)
-     clutch = 0
-     if (sigma < 0):
-         clutch = 1e32
-     return norm * np.exp(-0.5*((x-mu)**2) / sigma**2) + clutch
+    """ Returns Gaussian """
+    norm = 1.0 / (np.sqrt(2 * np.pi) * sigma)
+    clutch = 0
+    if (sigma < 0):
+        clutch = 1e32
+    return norm * np.exp(-0.5*((x-mu)**2) / sigma**2) + clutch
 
 def CorGaussian2(x,mu,sigma,mu2,sigma2,f):
-     """ Returns Gaussian """
-     norm = 1.0 / (np.sqrt(2 * np.pi) * sigma)
-     norm2 = 1.0 / (np.sqrt(2 * np.pi) * sigma2)
-     clutch = 0
-     if (sigma < 0):
-         clutch = 1e32
-     return norm * np.exp(-0.5*((x-mu)**2) / sigma**2) + clutch + f * np.exp(-0.5*((x-mu2)**2) / sigma2**2)
+    """ Returns Gaussian """
+    norm = 1.0 / (np.sqrt(2 * np.pi) * sigma)
+    norm2 = 1.0 / (np.sqrt(2 * np.pi) * sigma2)
+    clutch = 0
+    if (sigma < 0):
+        clutch = 1e32
+    return norm * np.exp(-0.5*((x-mu)**2) / sigma**2) + clutch + f * np.exp(-0.5*((x-mu2)**2) / sigma2**2)
 
 def get_rough_offset(sc,files,window=100):
     i = 0
     xct = []
     while i < len(files):
-	spec = sc[i]
-	f = open(files[i]).readlines()
-	pixel_centers_0 = []
-	for line in f:
-	    w = line.split()
-	    nlines = int(w[0])
-	    for j in range(nlines):
-	        pixel_centers_0.append(float(w[2*j+1]))
+        spec = sc[i]
+        f = open(files[i]).readlines()
+        pixel_centers_0 = []
+        for line in f:
+            w = line.split()
+            nlines = int(w[0])
+            for j in range(nlines):
+                pixel_centers_0.append(float(w[2*j+1]))
 
-	ml = array(pixel_centers_0) - 2
-	mh = array(pixel_centers_0) + 2
-    	xc,offs = XCorPix( spec, ml, mh,del_width=window)
-	if len(xct) == 0:
-	    xct = xc
-	else:
-	    xct += xc
-	i+=1
+        ml = array(pixel_centers_0) - 2
+        mh = array(pixel_centers_0) + 2
+        xc,offs = XCorPix( spec, ml, mh,del_width=window)
+        if len(xct) == 0:
+            xct = xc
+        else:
+            xct += xc
+        i+=1
 	
     ind_max = np.argmax( xct )
     delta   = offs[ind_max]
@@ -2049,8 +2061,7 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 	#	    #plot(np.arange(4096),Cheby_eval(coeffs_pix2wav,np.arange(4096),len(spec)))
 	#	    show()
 	#print order, len(pixel_centers), len(I)
-	return coeffs_pix2wav, coeffs_pix2sigma, pixel_centers[I], wavelengths[I], \
-        rmsms, residuals, centroids[I], sigmas[I], intensities[I]
+	return coeffs_pix2wav, coeffs_pix2sigma, pixel_centers[I], wavelengths[I], rmsms, residuals, centroids[I], sigmas[I], intensities[I]
 
 def XCorPix(spectra, mask_l, mask_h, del0=0, del_width=5, del_step=0.1):
     """
@@ -2166,18 +2177,18 @@ def LineFit_SingleSigma(X, Y, B, mu, sigma, weight,pixelization=False):
 
     def fitfunc(p, x, n):
 
-	if pixelization:
-	    lxo = len(x)
-	    xo = x.copy()
-	    x = np.arange(x[0]-0.5,x[-1]+0.5,0.01)
+        if pixelization:
+            lxo = len(x)
+            xo = x.copy()
+            x = np.arange(x[0]-0.5,x[-1]+0.5,0.01)
 
         ret = np.zeros(len(x))
         for i in range(n):
             ret += ( p[i*2+1] * IntGaussian(x,p[i*2+2],p[0]) )
 
-	if pixelization:
-	    ret = ret.reshape((lxo,100))
-	    ret = np.mean(ret,axis=1)
+        if pixelization:
+            ret = ret.reshape((lxo,100))
+            ret = np.mean(ret,axis=1)
 
 
         return ret
@@ -2256,13 +2267,13 @@ def Fit_Global_Wav_Solution(pix_centers, wavelengths, orders, Wgt, p0, minlines=
     if ( (len(L[0]) == 0) and (rms_ms < maxrms) ) or (N_l < minlines): 
         cond=0
     
-    print "\t\t\tStart Global culling with ", N_l, " number of lines"
+    print("\t\t\tStart Global culling with ", N_l, " number of lines")
     bad_wavs, bad_ords = [],[]
     while (cond):        
         index_worst = np.argmax( np.absolute(residuals) )
-	bad_wavs.append(wavelengths[I[index_worst]])
-	bad_ords.append(orders[I[index_worst]])
-	#print orders[I[index_worst]],wavelengths[I[index_worst]],rms_ms
+        bad_wavs.append(wavelengths[I[index_worst]])
+        bad_ords.append(orders[I[index_worst]])
+        #print orders[I[index_worst]],wavelengths[I[index_worst]],rms_ms
         I.pop( index_worst )
         N_l -= 1
         if (Cheby):
@@ -2296,9 +2307,9 @@ def Fit_Global_Wav_Solution(pix_centers, wavelengths, orders, Wgt, p0, minlines=
 	for j in ist:
 		print tmpords[j],tmpwvs[j]
     """
-    print "\t\t\tFinal RMS is ", rms_ms
-    print "\t\t\tNumber of lines is ", N_l
-    print "\t\t\t--> Achievable RV precision is ", rms_ms/np.sqrt(N_l)
+    print("\t\t\tFinal RMS is ", rms_ms)
+    print("\t\t\tNumber of lines is ", N_l)
+    print("\t\t\t--> Achievable RV precision is ", rms_ms/np.sqrt(N_l))
 
     return p1, pix_centers[I], orders[I], wavelengths[I], I, rms_ms, residuals 
 
@@ -2350,7 +2361,7 @@ def Global_Wav_Solution_vel_shift(pix_centers, wavelengths, orders, Wgt, p_ref, 
     #	plot(wavelengths[I][III],residuals[III],'.')
     #show()
 
-    print "\t\t\tStart Global culling with ", N_l, " number of lines"
+    print("\t\t\tStart Global culling with ", N_l, " number of lines")
     while (cond):        
         index_worst = np.argmax( np.absolute(residuals) )
         I.pop( index_worst )
@@ -2372,10 +2383,10 @@ def Global_Wav_Solution_vel_shift(pix_centers, wavelengths, orders, Wgt, p_ref, 
         #print "Eliminated line ", index_worst, " at order ", orders[index_worst]
         #print "RMS is ", rms_ms, " after elimination", len(L[0]), rms_ms, maxrms, N_l
 
-    print "\t\t\tFinal RMS is ", rms_ms
-    print "\t\t\tNumber of lines is ", N_l
-    print "\t\t\t--> Achievable RV precision is ", rms_ms/np.sqrt(N_l)
-    print "\t\t\tVelocity of ThAr w/r to solution provided is ", (1e-6*p1)*299792458.0
+    print("\t\t\tFinal RMS is ", rms_ms)
+    print("\t\t\tNumber of lines is ", N_l)
+    print("\t\t\t--> Achievable RV precision is ", rms_ms/np.sqrt(N_l))
+    print("\t\t\tVelocity of ThAr w/r to solution provided is ", (1e-6*p1)*299792458.0)
 
     #for oo in np.unique(orders[I]):
     #	III = np.where(orders[I]==oo)[0]
@@ -2432,22 +2443,22 @@ def Joint_Polynomial_Cheby(p,chebs,nx,nm):
     ret_val = p[0]
     k=1
     for i in range(nx):
-	ret_val += p[k]*xvec[i]
-	k+=1
+        ret_val += p[k]*xvec[i]
+        k+=1
     for i in range(nm):
-	ret_val += p[k]*mvec[i]
-	k+=1
+        ret_val += p[k]*mvec[i]
+        k+=1
 
     if nx >= nm:
-	for i in range(nx):
-	    for j in range(min(nx-i,nm)):
-		ret_val += p[k]*xvec[i]*mvec[j]
-		k+=1
+        for i in range(nx):
+            for j in range(min(nx-i,nm)):
+                ret_val += p[k]*xvec[i]*mvec[j]
+                k+=1
     else:
-	for j in range(nm):
-	    for i in range(min(nm-j-1,nx)):
-		ret_val += p[k]*xvec[i]*mvec[j]
-		k+=1	
+        for j in range(nm):
+            for i in range(min(nm-j-1,nx)):
+                ret_val += p[k]*xvec[i]*mvec[j]
+                k+=1	
     return ret_val
 
 def fp_base(f,n=3):
@@ -2468,18 +2479,18 @@ def fp_base(f,n=3):
     I = np.where(np.absolute(res)>3*rms)[0]
     cond = True
     if len(I)==0:
-	cond = False
+        cond = False
     while cond:
-	#print I
-	iw = np.argmax(res**2)
-	xmin = np.delete(xmin,iw)
-	fmin = np.delete(fmin,iw)
-	coef = np.polyfit(xmin,fmin,n)
-	res = fmin - np.polyval(coef,xmin)
-	rms = np.sqrt(np.mean(res**2))
-	I = np.where(res>3*rms)[0]
-	if len(I)==0:
-	    cond = False
+        #print I
+        iw = np.argmax(res**2)
+        xmin = np.delete(xmin,iw)
+        fmin = np.delete(fmin,iw)
+        coef = np.polyfit(xmin,fmin,n)
+        res = fmin - np.polyval(coef,xmin)
+        rms = np.sqrt(np.mean(res**2))
+        I = np.where(res>3*rms)[0]
+        if len(I)==0:
+            cond = False
 
     ox = np.arange(len(of))
     tbase = np.polyval(coef,ox)
@@ -2492,7 +2503,7 @@ def fp_base(f,n=3):
 
 def ccf_fp(fp,fpr,p1,order,order0=89,ntotal=70,npix=2048,Inv=True,nx=5,nm=6):
     def gaufp(p,v):
-	retval = np.exp(-((v-p[0])**2)/(2*p[1]**2))
+        retval = np.exp(-((v-p[0])**2)/(2*p[1]**2))
         return retval
     errgaufp = lambda p,c,v: np.ravel( (gaufp(p,v)-c) )
     pix_centers = np.arange(len(fp))
@@ -2503,29 +2514,29 @@ def ccf_fp(fp,fpr,p1,order,order0=89,ntotal=70,npix=2048,Inv=True,nx=5,nm=6):
     vels = np.arange(-10000.,10000.,30.)
     ccf = []
     for v in vels:
-	twav = wav*(1+v/299792458.)
-	tck = interpolate.splrep(twav,fp,k=3)
-	tfp = interpolate.splev(wav,tck)[500:-500]
-	tfp /= np.sum(tfp) 
-	tfpr = fpr[500:-500]
-	tfpr /= np.sum(tfpr)
-	ccf.append(np.sum(tfpr*tfp))
+        twav = wav*(1+v/299792458.)
+        tck = interpolate.splrep(twav,fp,k=3)
+        tfp = interpolate.splev(wav,tck)[500:-500]
+        tfp /= np.sum(tfp) 
+        tfpr = fpr[500:-500]
+        tfpr /= np.sum(tfpr)
+        ccf.append(np.sum(tfpr*tfp))
     ccf = np.array(ccf)
     try:
-	am = np.argmax(ccf)
-	imin = np.argmin(ccf[:am])
-	rmin = am + np.argmin(ccf[am:])
-	vels = vels[imin:rmin+1]
-	ccf  = ccf[imin:rmin+1]
-	ccf -= .5*(ccf[0]+ccf[-1])
-	ccf /= ccf.max()
+        am = np.argmax(ccf)
+        imin = np.argmin(ccf[:am])
+        rmin = am + np.argmin(ccf[am:])
+        vels = vels[imin:rmin+1]
+        ccf  = ccf[imin:rmin+1]
+        ccf -= .5*(ccf[0]+ccf[-1])
+        ccf /= ccf.max()
     
     	pg, success = scipy.optimize.leastsq(errgaufp, [0.,10.], args=(ccf, vels))
 
     	#plt.plot(vels,ccf)
     	#plt.plot(vels,gaufp(pg,vels))
     	#plt.show()
-	return pg[0]
+        return pg[0]
 
     except:
     	return -999.
@@ -2567,7 +2578,7 @@ def simbad_query_obname(obname):
             sp_type_query = result.split('|')[2]
         else:
             query_success = False
-	    sp_type_query = 'None'
+            sp_type_query = 'None'
     if not query_success:
         sp_type_query = None
     os.remove(tfile)
@@ -2606,11 +2617,11 @@ def simbad_query_coords(ra,dec):
         query_success = False
     else:
         query_success = True
-	try:
-		sp_type_query = result.split('|')[2]
-	except:
-		sp_type_query = 'None'
-		query_success = False
+        try:
+            sp_type_query = result.split('|')[2]
+        except:
+            sp_type_query = 'None'
+            query_success = False
     if not query_success:
         sp_type_query = 'None'
     os.remove(tfile)
@@ -2632,7 +2643,7 @@ def Lines_mBack(thar, sd, thres_rel=3, line_w=10):
     # Now, mask these lines
     mask = np.ones( len(sd) )
     for kk in lines:
-	mask[kk-line_w:kk+line_w+1] = 0
+        mask[kk-line_w:kk+line_w+1] = 0
     
     # New, final background estimnate
     X = np.array( range( len( d ) ) )
@@ -2644,7 +2655,7 @@ def Lines_mBack(thar, sd, thres_rel=3, line_w=10):
         bkg[L] = scipy.interpolate.splev(X[L],tck1)
         return bkg
     else:
-	return np.zeros( len(sd) )
+        return np.zeros( len(sd) )
 
 def FindLines_simple_sigma(d,sd,thres=3):
     """
@@ -2714,32 +2725,32 @@ def XC_Gau_Fit(X,Y,back_lag=5, usemin=1):
 def get_mask(sp_type_query,T_eff, query_success):
 	if (query_success):
 		if (sp_type_query.count('G') > 0):
-			print "Using G mask"
+			print("Using G mask")
 			sp_type = 'G2'
 		elif (sp_type_query.count('K') > 0):
-			print "Using K mask"
+			print("Using K mask")
 			sp_type = 'K5'
 		elif (sp_type_query.count('M') > 0):
-			print "Using M mask"
+			print("Using M mask")
 			sp_type = 'K5'
 		elif (sp_type_query.count('F') > 0) or (sp_type_query.count('A') > 0):
-			print "Rather hot star, using G mask but this target is probably earlier than that.."
+			print("Rather hot star, using G mask but this target is probably earlier than that..")
 			sp_type = 'G2'
 		else:
-			print "Probable problem, spectral type not in the books, using G-mask"
+			print("Probable problem, spectral type not in the books, using G-mask")
 			sp_type = 'G2'    
 	else:
 		if (T_eff >= 4300) and (T_eff < 5350):
-			print "Using K mask"
+			print("Using K mask")
 			sp_type = 'K5'
 		elif (T_eff >= 5350) and (T_eff < 6100):
-			print "Using G mask"
+			print("Using G mask")
 			sp_type = 'G2'
 		elif (T_eff >= 6100):
-			print "Rather hot star, using G mask but this target is probably earlier than that.."
+			print("Rather hot star, using G mask but this target is probably earlier than that..")
 			sp_type = 'G2'
 		else:
-			print "Using M mask"
+			print("Using M mask")
 			sp_type = 'K5'
 	return sp_type
 
@@ -2776,7 +2787,7 @@ def get_cont_single(W,F,E,nc=3,ll=3,lu=3,span=10,fact=3.,frac=0.3):
 			good_w,good_f = [],[]
 			fact +=1
 		if fact>20:
-			return np.array([1.])
+			return np.array([0,np.max(scipy.signal.medfilt(F,21))])
 		
 	gw,gf = np.array(good_w),np.array(good_f)
 	rw,re,rd = np.array(rw),np.array(re),np.array(rd) 
@@ -2940,7 +2951,7 @@ def get_lunar_props(ephem,gobs,Mcoo,Mp,Sp,res,RA,DEC):
     if rasep > 180:
         rasep = 360 - rasep
     if decsep > 180:
-        decsep = 360 -decsep
+        decsep = 360 - decsep
     moonsep2 = np.sqrt( (rasep)**2 + (decsep)**2 )
     moonvel =  sun_moon + moon_obs
     return lunation,moon_state,moonsep2,moonvel
@@ -3120,11 +3131,11 @@ def convolve(wav,flx,R):
     NF = []
     for i in range(len(wav)):
         I = np.where((wav>lims1[i]) & (wav<lims2[i]))[0]
-	W = wav[I]
-	F = flx[I]
-	G = np.exp(-(wav[I] - wav[i])**2/(0.5*devs[i]**2))
-	G = G / np.sum(G)
-	NF.append(np.sum(F*G))
+        W = wav[I]
+        F = flx[I]
+        G = np.exp(-(wav[I] - wav[i])**2/(0.5*devs[i]**2))
+        G = G / np.sum(G)
+        NF.append(np.sum(F*G))
     NF = np.array(NF)
     return NF
 
@@ -3211,9 +3222,9 @@ def calc_bss(vels, xc_av, bot_i=0.1, bot_f=0.4, top_i=0.6, top_f=0.85):
 		der_bottom = 0
 		der_top = 0
 		slope = 0
-	return span,der_bottom,der_top, slope, stat
+	return span, der_bottom, der_top, slope, stat
 
-def cor_thar(spec, span=10, filename='/data/echelle/ecpipe/DuPont/wavcals/',binning=1, di=0.1):
+def cor_thar(spec, span=10, filename='/data/echelle/ecpipe/DuPont/wavcals/', binning=1, di=0.1):
 	
 	f = open(filename).readlines()
 
@@ -3347,17 +3358,17 @@ def get_disp(obname,reffile='reffile.txt'):
         f = open(reffile,'r')
         lines = f.readlines()
         f.close()
-	found = False
+        found = False
         for line in lines:
             cos = line.split(',')
             if cos[0] == obname:
-		disp = float(cos[7])
-		found = True
-		break
-	if not found:
-	    print '\t\tWarning! There is no predefined dispersion of the CCF.'
+                disp = float(cos[7])
+                found = True
+                break
+        if not found:
+            print('\t\tWarning! There is no predefined dispersion of the CCF.')
     except:
-        print '\t\tWarning! There is no predefined dispersion of the CCF.'
+        print('\t\tWarning! There is no predefined dispersion of the CCF.')
 
     return disp
 
@@ -3372,23 +3383,23 @@ def get_mask_reffile(obname,reffile='reffile.txt',base='../../xc_masks/'):
         lines = f.readlines()
         f.close()
 
-	found = False
+        found = False
         for line in lines:
             cos = line.split(',')
-	    msk = cos[6].strip()
+            msk = cos[6].strip()
             if cos[0] == obname and (msk=='G2' or msk=='K5' or msk=='M2'):
-		sp_type = cos[6][:2]
-		found = True
-		break
-	if not found:
-	    print '\t\tWarning! Target not found in reference mask file. Using default mask (G2)'
+                sp_type = cos[6][:2]
+                found = True
+                break
+        if not found:
+            print('\t\tWarning! Target not found in reference mask file. Using default mask (G2)')
     except:
-        print '\t\tWarning! Problem with reference mask file. Forcing to G2 mask'
+        print('\t\tWarning! Problem with reference mask file. Forcing to G2 mask')
 
     if sp_type == 'G2':
-	xc_mask = xc_masks[0]
+        xc_mask = xc_masks[0]
     elif sp_type == 'K5':
-	xc_mask = xc_masks[1]
+        xc_mask = xc_masks[1]
     else:
         xc_mask = xc_masks[2]
 
@@ -3400,23 +3411,23 @@ def get_mask_query(sp_type_query,base='../../xc_masks/'):
                 base+'M2.mas' ]
 
     if (sp_type_query.count('G') > 0):
-        print "Using G mask according to simbad"
+        print("Using G mask according to simbad")
         mask = xc_masks[0]
         sp_type = 'G2'
     elif (sp_type_query.count('K') > 0):
-        print "Using K mask according to simbad"
+        print("Using K mask according to simbad")
         mask = xc_masks[1]
         sp_type = 'K5'
     elif (sp_type_query.count('M') > 0):
-        print "Using M mask according to simbad"
+        print("Using M mask according to simbad")
         mask = xc_masks[2]
         sp_type = 'M5'
     elif (sp_type_query.count('F') > 0) or (sp_type_query.count('A') > 0):
-        print "Rather hot star according to simbad, using G mask but this target is probably earlier than that.."
+        print("Rather hot star according to simbad, using G mask but this target is probably earlier than that..")
         mask = xc_masks[0]
         sp_type = 'G2'
     else:
-        print "Probable problem, spectral type not in the books according to simbad, using G-mask"
+        print("Probable problem, spectral type not in the books according to simbad, using G-mask")
         mask = xc_masks[0]   
         sp_type = 'G2'    
     return sp_type, mask
@@ -3426,19 +3437,19 @@ def get_mask_teff(T_eff,base='../../xc_masks/'):
                 base+'K5.mas',\
                 base+'M2.mas' ]
     if (T_eff >= 4300) and (T_eff < 5350):
-        print "Using K mask according to T_eff"
+        print("Using K mask according to T_eff")
         mask = xc_masks[1]
         sp_type = 'K5'
     elif (T_eff >= 5350) and (T_eff < 6100):
-        print "Using G mask according to T_eff"
+        print("Using G mask according to T_eff")
         mask = xc_masks[0]
         sp_type = 'G2'
     elif (T_eff >= 6100):
-        print "Rather hot star according to T_eff, using G mask but this target is probably earlier than that.."
+        print("Rather hot star according to T_eff, using G mask but this target is probably earlier than that..")
         mask = xc_masks[0]
         sp_type = 'G2'
     else:
-        print "Using M mask according to T_eff"
+        print("Using M mask according to T_eff")
         mask = xc_masks[2]
         sp_type = 'M5'
     return sp_type, mask
@@ -3551,36 +3562,43 @@ def simbad_coords(obname,mjd):
 	elif obname.lower() == 'omicronpup':
 		obname = 'omi pup'
 
-	sp,ra,dec = 0,0,0
-	(th,tfile) = tempfile.mkstemp(prefix='CP', text=True)
-        tf = open(tfile,'w')
-	tf.write("output console=off\n")
-	tf.write("output script=off\n")
-	tf.write("output error=merge\n")
-	tf.write("set limit 1\n")
-	tf.write("format object fmt1 \"%IDLIST(1) | %OTYPELIST(S) | %SP(S) | %COO(A) | %COO(D) | %PM(A) | %PM(D)\"\n")
-	tf.write("result full\n")
-	tf.write("query id %s\n" % ( obname ) )
-	tf.close()
-	values = [("scriptFIle", (pycurl.FORM_FILE, tfile))]
-	output = StringIO.StringIO() 
-	c = pycurl.Curl()
-	c.setopt(pycurl.URL, "http://simbad.u-strasbg.fr/simbad/sim-script")
-	c.setopt(c.HTTPPOST, values)
-	c.setopt(pycurl.WRITEFUNCTION, output.write)
-	cond = True
-	while cond:
-		try:
-			c.perform()
-		except:
-			print 'Trying again to perform query to SIMBAD'
-		else:
-			cond = False
-	c.close()
+    paths = ['http://simbad.u-strasbg.fr/simbad/sim-script','http://simbad.harvard.edu/simbad/sim-script']
+
+    cond = True
+    i = 0
+    while cond:
+        try:
+        	sp,ra,dec = 0,0,0
+        	(th,tfile) = tempfile.mkstemp(prefix='CP', text=True)
+                tf = open(tfile,'w')
+        	tf.write("output console=off\n")
+        	tf.write("output script=off\n")
+        	tf.write("output error=merge\n")
+        	tf.write("set limit 1\n")
+        	tf.write("format object fmt1 \"%IDLIST(1) | %OTYPELIST(S) | %SP(S) | %COO(A) | %COO(D) | %PM(A) | %PM(D)\"\n")
+        	tf.write("result full\n")
+        	tf.write("query id %s\n" % ( obname ) )
+        	tf.close()
+        	values = [("scriptFIle", (pycurl.FORM_FILE, tfile))]
+        	output = StringIO.StringIO() 
+        	c = pycurl.Curl()
+        	c.setopt(pycurl.URL, paths[i])
+        	c.setopt(c.HTTPPOST, values)
+        	c.setopt(pycurl.WRITEFUNCTION, output.write)
+            c.perform()
+        except:
+            if i == 0:
+                i = 1
+            else:
+                i=0
+            print('Trying again to perform query to SIMBAD, changing to', paths[i])
+        else:
+            cond = False
+    c.close()
 	result = output.getvalue() 
 	lines = result.split('\n')
 	info = lines[6].split('|')
-	print info
+	print(info)
 	if 'Unrecogniezd' in info[0] or 'not' in info[0]:
 		know = False
 	else:
@@ -3771,11 +3789,11 @@ def new_ccf(data,model_path):
 					ccftot += ccf
 				#plot(ccv,ccf/np.sum(ccf))
 				#show()
-			print model, rot, ccftot.min()
+			print(model, rot, ccftot.min())
 			if ccftot.min() < mini:
 				mini = ccftot.min()
 				modmin = par
 				rotmin = rot
 			#plot(ccv,ccftot)
 	#show()
-	print modmin,rotmin,mini
+	print(modmin,rotmin,mini)
